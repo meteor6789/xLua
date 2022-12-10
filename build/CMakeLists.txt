@@ -33,6 +33,39 @@ find_path(XLUA_PROJECT_DIR NAMES SConstruct
 
 MARK_AS_ADVANCED(XLUA_PROJECT_DIR)
 
+#begin lua-rapidjson
+set (RAPIDJSON_SRC lua-rapidjson/source/rapidjson.cpp)
+set_property(
+    SOURCE ${RAPIDJSON_SRC}
+    APPEND
+    PROPERTY COMPILE_DEFINITIONS
+    LUA_LIB
+)
+list(APPEND THIRDPART_INC  lua-rapidjson/include)
+set (THIRDPART_SRC ${THIRDPART_SRC} ${RAPIDJSON_SRC})
+#end lua-rapidjson
+
+set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Os -Wall -s")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Os -Wall -s")
+
+#begin lua-profobuf
+    set (LPB_SRC 
+        lua-protobuf/pb.c
+    )
+    set_property(
+        SOURCE ${LPB_SRC}
+        APPEND
+        PROPERTY COMPILE_DEFINITIONS
+        LUA_LIB
+    )
+    list(APPEND THIRDPART_INC lua-protobuf)
+    set (THIRDPART_SRC ${THIRDPART_SRC} ${LPB_SRC})
+#end lua-protobuf
+
+
+set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Os -Wall -s")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Os -Wall -s")
+
 if (NOT LUA_VERSION)
     set(LUA_VERSION "5.3.5")
 endif()
@@ -156,29 +189,18 @@ if (APPLE)
 		set_xcode_property (xlua IPHONEOS_DEPLOYMENT_TARGET "7.0" "all")
     else ()
         ADD_DEFINITIONS(-DLUA_USE_MACOSX) #osx platform emmylua debugger must have this option or can not load cpath
-        if (BUILD_SILICON)
-           set(CMAKE_OSX_ARCHITECTURES arm64)
-
-            add_library(xlua SHARED
-                ${LUA_CORE}
-                ${LUA_LIB}
-                ${LUA_SOCKET}
-                ${XLUA_CORE}
-                ${THIRDPART_SRC}
-            )
-        else ()
-            set(CMAKE_OSX_ARCHITECTURES "$(ARCHS_STANDARD_64_BIT)")
-            add_library(xlua MODULE
-                ${LUA_CORE}
-                ${LUA_LIB}
-                ${LUA_SOCKET}
-                ${XLUA_CORE}
-                ${THIRDPART_SRC}
-            )
-            set_target_properties ( xlua PROPERTIES BUNDLE TRUE )
-            #set_target_properties ( xlua PROPERTIES FRAMEWORK TRUE )
-            #set_target_properties ( xlua PROPERTIES MACOSX_RPATH TRUE )
-        endif ()
+        ADD_DEFINITIONS(-DLUA_USE_DLOPEN)
+        set(CMAKE_OSX_ARCHITECTURES "$(ARCHS_STANDARD_64_BIT)")
+        add_library(xlua MODULE
+            ${LUA_CORE}
+            ${LUA_LIB}
+            ${LUA_SOCKET}
+            ${XLUA_CORE}
+            ${THIRDPART_SRC}
+        )
+        set_target_properties ( xlua PROPERTIES BUNDLE TRUE )
+        #set_target_properties ( xlua PROPERTIES FRAMEWORK TRUE )
+        #set_target_properties ( xlua PROPERTIES MACOSX_RPATH TRUE )
     endif ()
 elseif ("${CMAKE_SYSTEM_NAME}" STREQUAL "Switch")
     add_library(xlua STATIC
